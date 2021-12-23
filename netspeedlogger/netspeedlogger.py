@@ -136,6 +136,12 @@ def run_speedtest(retries: int = 3, timeout: int = 15, sleep_between_retries: in
             mylogger.warning(message)
             if (retry_count + 1) < retries:
                 sleep(sleep_between_retries)
+        except IndexError as e:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(e).__name__, e.args)
+            mylogger.warning(message)
+            if (retry_count + 1) < retries:
+                sleep(sleep_between_retries)
 
     mylogger.error(f"Failed running speed test {retries} times; returning zero values")
 
