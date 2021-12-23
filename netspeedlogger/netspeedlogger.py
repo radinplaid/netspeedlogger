@@ -34,6 +34,15 @@ def get_database_path():
     return os.path.join(database_folder, "netspeedlogger.sqlite3")
 
 
+def database_has_results():
+    """Returns True if netspeedlogger database has results, False otherwise"""
+    result = query("select count(*) from netspeedlogger")
+    if isinstance(result, pd.DataFrame):
+        return True
+    else:
+        return False
+
+
 def query(query: str):
     """Run a SQL querry on the netspeedlogger database"""
     database_file = get_database_path()

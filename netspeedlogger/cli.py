@@ -9,6 +9,7 @@ import pandas as pd
 from streamlit import cli as stcli
 
 from .netspeedlogger import (
+    database_has_results,
     delete_database_if_exists,
     get_database_path,
     query,
@@ -20,8 +21,9 @@ from .netspeedlogger import (
 
 def sql_to_markdown(sql_query: str, showindex: bool = False):
     """Run a SQL querry on the netspeedlogger database and print a table of the results"""
-    df = query(sql_query)
-    if isinstance(df, pd.DataFrame):
+
+    if database_has_results():
+        df = query(sql_query)
         print(df.to_markdown(index=showindex))
     else:
         print("No results - run `netspeedlogger run` first")
@@ -47,16 +49,19 @@ def results():
 
 def summary():
     """Display summary of internet speed test results as a table"""
-    df = query(
-        (
-            "select substr(timestamp,1,19) as 'Date Time', "
-            "   download_speed/(1024*1024) as 'Download Speed (Mb/s)', "
-            "   upload_speed/(1024*1024) as 'Upload Speed (Mb/s)', "
-            "   ping as 'Ping (ms)'  "
-            "   from netspeedlogger "
+    if database_has_results():
+        df = query(
+            (
+                "select substr(timestamp,1,19) as 'Date Time', "
+                "   download_speed/(1024*1024) as 'Download Speed (Mb/s)', "
+                "   upload_speed/(1024*1024) as 'Upload Speed (Mb/s)', "
+                "   ping as 'Ping (ms)'  "
+                "   from netspeedlogger "
+            )
         )
-    )
-    print(df.describe().to_markdown(index=True))
+        print(df.describe().to_markdown(index=True))
+    else:
+        print("No results - run `netspeedlogger run` first")
 
 
 def speedtest():
