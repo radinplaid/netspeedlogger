@@ -20,8 +20,8 @@ a_date = st.date_input("Pick a date", (min_date, max_date))
 
 dat = selectall_with_date_range(min_date=str(a_date[0]), max_date=str(a_date[1]))
 
-if not dat:
-    st.markdown("No data - run `netspeedlogger run` first!")
+if not isinstance(dat, pd.DataFrame):
+    st.markdown("No data - run `netspeedlogger speedtest` first!")
 else:
     dat["download_speed"] = dat["download_speed"] / (1024 * 1024)
     dat["upload_speed"] = dat["upload_speed"] / (1024 * 1024)
