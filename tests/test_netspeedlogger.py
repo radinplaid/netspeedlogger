@@ -8,7 +8,6 @@ import os
 from tempfile import TemporaryDirectory
 
 import mock
-import numpy as np
 import pandas as pd
 import pytest
 from faker import Faker
@@ -61,6 +60,13 @@ def test_run_speedtest_timeout_zero():
     assert df["server_id"].values[0] is None
 
 
+def test_selectall_with_date_range_noresults():
+    from ..netspeedlogger.netspeedlogger import selectall_with_date_range
+
+    df = selectall_with_date_range("2020-01-01 00:00:00", "2050-01-01 00:00:00")
+    assert df is None
+
+
 def test_cli_run(capsys):
     from ..netspeedlogger.cli import speedtest
 
@@ -71,6 +77,27 @@ def test_cli_run(capsys):
         "Starting to run an internet speed test, and logging the output" in captured.out
     )
     assert "Speedtest complete." in captured.out
+
+
+def test_altair_timeseries_chart():
+    from ..netspeedlogger.netspeedlogger import (
+        timeseries_chart,
+        selectall_with_date_range,
+    )
+    import datetime
+    import altair as alt
+
+    min_date = datetime.date.today() - datetime.timedelta(days=7)
+    max_date = datetime.date.today() + datetime.timedelta(days=1)
+
+    dat = selectall_with_date_range(min_date=str(min_date), max_date=str(max_date))
+    dat["download_speed"] = dat["download_speed"] / (1024 * 1024)
+    dat["upload_speed"] = dat["upload_speed"] / (1024 * 1024)
+    dat["hour"] = [int(i[11:13]) for i in dat["timestamp"]]
+
+    chart = timeseries_chart(dat, "ping", 1000, 2000)
+
+    assert isinstance(chart, alt.Chart)
 
 
 def test_cli_summary(capsys):
@@ -94,6 +121,13 @@ def test_cli_results(capsys):
     assert "Download Speed (Mb/s)" in captured.out
     assert "Upload Speed (Mb/s)" in captured.out
     assert "Ping (ms)" in captured.out
+
+
+def test_selectall_with_date_range():
+    from ..netspeedlogger.netspeedlogger import selectall_with_date_range
+
+    df = selectall_with_date_range("2020-01-01 00:00:00", "2050-01-01 00:00:00")
+    assert isinstance(df, pd.DataFrame)
 
 
 def test_delete_database_n():

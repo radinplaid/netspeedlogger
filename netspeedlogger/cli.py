@@ -5,6 +5,7 @@ import pathlib
 import sys
 
 import fire
+import pandas as pd
 from streamlit import cli as stcli
 
 from .netspeedlogger import (
@@ -20,7 +21,10 @@ from .netspeedlogger import (
 def sql_to_markdown(sql_query: str, showindex: bool = False):
     """Run a SQL querry on the netspeedlogger database and print a table of the results"""
     df = query(sql_query)
-    print(df.to_markdown(index=showindex))
+    if isinstance(df, pd.DataFrame):
+        print(df.to_markdown(index=showindex))
+    else:
+        print("No results - run `netspeedlogger run` first")
 
 
 def results():
