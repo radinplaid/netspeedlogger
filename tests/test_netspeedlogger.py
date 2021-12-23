@@ -96,14 +96,6 @@ def test_cli_results(capsys):
     assert "Ping (ms)" in captured.out
 
 
-def test_create_speedtest_dir():
-    """If netspeedloggerdir does not exist, create it"""
-    from ..netspeedlogger.netspeedlogger import get_database_path
-
-    os.environ["NETSPEEDLOGGER"] = os.path.join(tempdir.name, "test")
-    assert os.path.isdir(os.path.join(tempdir.name, "test"))
-
-
 def test_delete_database_n():
     from ..netspeedlogger.cli import delete_database
 
