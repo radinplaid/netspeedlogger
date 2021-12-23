@@ -35,6 +35,12 @@ def speedtest_result():
     return results_dict
 
 
+def test_database_has_results():
+    from ..netspeedlogger.netspeedlogger import database_has_results
+
+    assert database_has_results() is False
+
+
 def test_validate_speedtest_result(speedtest_result):
     """Sample pytest test function with the pytest fixture as an argument."""
     from ..netspeedlogger.netspeedlogger import validate_speedtest_result
@@ -91,60 +97,85 @@ def test_altair_timeseries_chart():
     max_date = datetime.date.today() + datetime.timedelta(days=1)
 
     dat = selectall_with_date_range(min_date=str(min_date), max_date=str(max_date))
-    dat["download_speed"] = dat["download_speed"] / (1024 * 1024)
-    dat["upload_speed"] = dat["upload_speed"] / (1024 * 1024)
-    dat["hour"] = [int(i[11:13]) for i in dat["timestamp"]]
 
-    chart = timeseries_chart(dat, "ping", 1000, 2000)
+    if isinstance(dat, pd.DataFrame):
+        dat["download_speed"] = dat["download_speed"] / (1024 * 1024)
+        dat["upload_speed"] = dat["upload_speed"] / (1024 * 1024)
+        dat["hour"] = [int(i[11:13]) for i in dat["timestamp"]]
 
-    assert isinstance(chart, alt.Chart)
+        chart = timeseries_chart(dat, "ping", 1000, 2000)
+
+        assert isinstance(chart, alt.Chart)
+    else:
+        assert dat is None
 
 
 def test_cli_summary(capsys):
     from ..netspeedlogger.cli import summary
+    from ..netspeedlogger.netspeedlogger import database_has_results
 
     summary()
     captured = capsys.readouterr()
-    assert "count" in captured.out
-    assert "mean" in captured.out
-    assert "Download Speed (Mb/s)" in captured.out
-    assert "Upload Speed (Mb/s)" in captured.out
-    assert "Ping (ms)" in captured.out
+
+    if database_has_results():
+        assert "count" in captured.out
+        assert "mean" in captured.out
+        assert "Download Speed (Mb/s)" in captured.out
+        assert "Upload Speed (Mb/s)" in captured.out
+        assert "Ping (ms)" in captured.out
+    else:
+        assert "No results - run `netspeedlogger run` first" in captured.out
 
 
 def test_cli_results(capsys):
     from ..netspeedlogger.cli import results
+    from ..netspeedlogger.netspeedlogger import database_has_results
 
     results()
     captured = capsys.readouterr()
-    assert "Date Time" in captured.out
-    assert "Download Speed (Mb/s)" in captured.out
-    assert "Upload Speed (Mb/s)" in captured.out
-    assert "Ping (ms)" in captured.out
+
+    if database_has_results():
+        assert "Date Time" in captured.out
+        assert "Download Speed (Mb/s)" in captured.out
+        assert "Upload Speed (Mb/s)" in captured.out
+        assert "Ping (ms)" in captured.out
+    else:
+        assert "No results - run `netspeedlogger run` first" in captured.out
 
 
 def test_selectall_with_date_range():
-    from ..netspeedlogger.netspeedlogger import selectall_with_date_range
+    from ..netspeedlogger.netspeedlogger import (
+        selectall_with_date_range,
+        database_has_results,
+    )
 
     df = selectall_with_date_range("2020-01-01 00:00:00", "2050-01-01 00:00:00")
-    assert isinstance(df, pd.DataFrame)
+
+    if database_has_results():
+        assert isinstance(df, pd.DataFrame)
+    else:
+        assert df is None
 
 
 def test_delete_database_n():
     from ..netspeedlogger.cli import delete_database
+    from ..netspeedlogger.netspeedlogger import database_has_results
 
-    with mock.patch.object(builtins, "input", lambda _: "n"):
-        assert delete_database() == "Not deleting database"
+    if database_has_results():
+        with mock.patch.object(builtins, "input", lambda _: "n"):
+            assert delete_database() == "Not deleting database"
+    else:
+        pass
 
 
 def test_delete_database_y():
-    from ..netspeedlogger.cli import delete_database, get_database_path
+    from ..netspeedlogger.cli import delete_database, database_has_results
+    from ..netspeedlogger.netspeedlogger import get_database_path
 
-    dbpath = get_database_path()
-    dbexists = os.path.isfile(dbpath)
-    with mock.patch.object(builtins, "input", lambda _: "y"):
-        assert delete_database() == "Database deleted"
-
-    # If there was a database, assert it was deleted
-    if dbexists:
-        assert os.path.isfile(dbpath) is False
+    if database_has_results():
+        dbpath = get_database_path()
+        with mock.patch.object(builtins, "input", lambda _: "y"):
+            assert delete_database() == "Database deleted"
+            assert os.path.isfile(dbpath) is False
+    else:
+        pass

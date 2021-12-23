@@ -34,6 +34,15 @@ def get_database_path():
     return os.path.join(database_folder, "netspeedlogger.sqlite3")
 
 
+def database_has_results():
+    """Returns True if netspeedlogger database has results, False otherwise"""
+    result = query("select count(*) from netspeedlogger")
+    if isinstance(result, pd.DataFrame):
+        return True
+    else:
+        return False
+
+
 def query(query: str):
     """Run a SQL querry on the netspeedlogger database"""
     database_file = get_database_path()
@@ -122,6 +131,12 @@ def run_speedtest(retries: int = 3, timeout: int = 15, sleep_between_retries: in
             validate_speedtest_result(results_dict)
             return results_dict
         except speedtest.ConfigRetrievalError as e:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(e).__name__, e.args)
+            mylogger.warning(message)
+            if (retry_count + 1) < retries:
+                sleep(sleep_between_retries)
+        except IndexError as e:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
             mylogger.warning(message)
