@@ -36,16 +36,16 @@ def get_database_path():
 def query(query: str):
     """Run a SQL querry on the netspeedlogger database"""
     database_file = get_database_path()
-    con = sqlite3.connect(database_file)
-    df = pd.read_sql_query(query, con)
-    con.close()
-    return df
+    if os.path.isfile(database_file):
+        con = sqlite3.connect(database_file)
+        df = pd.read_sql_query(query, con)
+        con.close()
+        return df
 
 
 def selectall():
-    database_file = get_database_path()
     """Select all records in the netspeedlogger database"""
-    return query("SELECT * from netspeedlogger", database_file)
+    return query("SELECT * from netspeedlogger")
 
 
 def validate_speedtest_result(results_dict: dict):
@@ -100,7 +100,6 @@ def write_speedtest_to_database(df: pd.DataFrame):
 def delete_database_if_exists():
     dbpath = get_database_path()
     if os.path.isfile(dbpath):
-        mylogger.info(f"Deleting netspeedlogger database at path: {dbpath}")
         os.remove(dbpath)
 
 
@@ -132,21 +131,3 @@ def run_speedtest(retries: int = 3, timeout: int = 15, sleep_between_retries: in
         "server": {"host": None, "id": None},
         "timestamp": str(datetime.datetime.now()),
     }
-
-
-# database_path = get_database_path()
-
-# mylogger.info('Internet Speed Test script started')
-# mylogger.info(str(datetime.datetime.now()))
-
-# df = run_speedtest()
-
-# mylogger.info(f"Opening database: {database_path}")
-# con = sqlite3.connect(database_path)
-
-# mylogger.info("Inserting into database")
-# df.to_sql("speedtest", con, if_exists="append")
-
-# mylogger.info(str(datetime.datetime.now()))
-# mylogger.info('Internet Speed Test script finished')
-# con.close()
